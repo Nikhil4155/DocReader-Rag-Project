@@ -1,0 +1,10 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: DocReader-Backend
+server:
+  port: 8081
+
+
+# spring.application.name=DocReader-Backend

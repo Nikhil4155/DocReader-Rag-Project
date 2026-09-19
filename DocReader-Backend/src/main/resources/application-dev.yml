@@ -1,0 +1,74 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5434}/${DB_NAME:docmind}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  ai:
+    model:
+      # We are NOT using OpenAI embedding
+      embedding: none
+
+      # We ARE using Gemini for text embeddings
+      embedding.text: google-genai
+
+      # We are NOT using OpenAI audio
+      audio:
+        speech: none
+        transcription: none
+
+      # We are NOT using OpenAI image generation
+      image: none
+
+      # We are NOT using OpenAI moderation
+      moderation: none
+
+    # Groq uses OpenAI-compatible API
+    openai:
+      chat:
+        api-key: ${GROQ_API_KEY}
+        base-url: https://api.groq.com/openai/v1
+        model: ${OPENAI_CHAT_MODEL:openai/gpt-oss-120b}
+        temperature: 0.2
+
+    google:
+      genai:
+        embedding:
+          api-key: ${GEMINI_API_KEY}
+          text:
+            model: gemini-embedding-001
+            dimensions: 1536
+            task-type: RETRIEVAL_DOCUMENT
+
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1536
+        table-name: vector_store
+        schema-name: public
+        initialize-schema: true
+
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 50MB
+
+app:
+  rag:
+    chunk-size: 700
+    top-k: 5
+    similarity-threshold: 0.0
+
+  cors:
+    allowed-origins: "*"
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+    allowed-headers: "*"
