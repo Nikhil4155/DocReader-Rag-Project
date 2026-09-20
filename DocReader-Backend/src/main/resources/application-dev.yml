@@ -62,6 +62,11 @@ spring:
       max-file-size: 25MB
       max-request-size: 50MB
 
+jwt:
+  secret: ${JWT_SECRET:sdafasfasfasdhfojhascapfdaNIKHILSAHDHAfbashfabfashfasbfshfdasfhqf}
+  expiration: 3600000
+
+
 app:
   rag:
     chunk-size: 700

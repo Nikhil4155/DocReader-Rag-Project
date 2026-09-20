@@ -16,6 +16,7 @@ import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
 
+//http://localhost:8081/swagger-ui/index.html
 @RestController
 @RequestMapping("/api/v1/chat")
 @Tag(

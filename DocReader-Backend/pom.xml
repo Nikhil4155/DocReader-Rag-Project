@@ -24,7 +24,10 @@
 
 	<dependencies>
 
-		<!-- Spring Boot Core -->
+		<!-- ======================================== -->
+		<!-- Spring Boot Core                         -->
+		<!-- ======================================== -->
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
@@ -48,41 +51,96 @@
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
-		<!-- Spring AI - OpenAI / Embedding Model -->
+
+		<!-- ======================================== -->
+		<!-- Spring Security                          -->
+		<!-- ======================================== -->
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+
+		<!-- ======================================== -->
+		<!-- JWT Authentication                       -->
+		<!-- ======================================== -->
+
+		<!-- JWT API -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>0.13.0</version>
+		</dependency>
+
+		<!-- JWT Implementation -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>0.13.0</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- JWT Jackson Serializer -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>0.13.0</version>
+			<scope>runtime</scope>
+		</dependency>
+
+
+		<!-- ======================================== -->
+		<!-- Spring AI                                -->
+		<!-- ======================================== -->
+
+		<!-- Spring AI OpenAI / Embedding Model -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-starter-model-openai</artifactId>
 		</dependency>
 
-		<!-- Spring AI - PGVector -->
+		<!-- Spring AI PGVector -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
 		</dependency>
 
-		<!-- Spring AI - Tika Document Reader -->
+		<!-- Spring AI Tika Document Reader -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-tika-document-reader</artifactId>
 		</dependency>
 
-		<!-- Spring AI - PDF Document Reader -->
+		<!-- Spring AI PDF Document Reader -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-pdf-document-reader</artifactId>
 		</dependency>
 
-		<!-- Spring AI - Vector Store Advisor -->
+		<!-- Spring AI Vector Store Advisor -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-vector-store-advisor</artifactId>
 		</dependency>
 
-		<!-- Spring AI - Gemini Embedding Model -->
+		<!-- Spring AI Tool Search Advisor -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-tool-search-advisor</artifactId>
+			<version>2.0.1</version>
+		</dependency>
+
+		<!-- Gemini Embedding Model -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-starter-model-google-genai-embedding</artifactId>
 		</dependency>
+
+
+		<!-- ======================================== -->
+		<!-- Database                                 -->
+		<!-- ======================================== -->
 
 		<!-- PostgreSQL -->
 		<dependency>
@@ -91,12 +149,22 @@
 			<scope>runtime</scope>
 		</dependency>
 
+
+		<!-- ======================================== -->
+		<!-- Utility Libraries                        -->
+		<!-- ======================================== -->
+
 		<!-- ModelMapper -->
 		<dependency>
 			<groupId>org.modelmapper</groupId>
 			<artifactId>modelmapper</artifactId>
 			<version>3.2.4</version>
 		</dependency>
+
+
+		<!-- ======================================== -->
+		<!-- API Documentation                        -->
+		<!-- ======================================== -->
 
 		<!-- Swagger / OpenAPI -->
 		<dependency>
@@ -105,14 +173,22 @@
 			<version>${springdoc.version}</version>
 		</dependency>
 
-		<!-- Lombok -->
+
+		<!-- ======================================== -->
+		<!-- Lombok                                   -->
+		<!-- ======================================== -->
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Testing -->
+
+		<!-- ======================================== -->
+		<!-- Testing                                  -->
+		<!-- ======================================== -->
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -121,9 +197,14 @@
 
 	</dependencies>
 
-	<!-- Spring AI Version Management -->
+
+	<!-- ============================================ -->
+	<!-- Spring AI Version Management                -->
+	<!-- ============================================ -->
+
 	<dependencyManagement>
 		<dependencies>
+
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-bom</artifactId>
@@ -131,8 +212,14 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+
 		</dependencies>
 	</dependencyManagement>
+
+
+	<!-- ============================================ -->
+	<!-- Build Configuration                          -->
+	<!-- ============================================ -->
 
 	<build>
 		<plugins>
@@ -141,12 +228,25 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
+
 			</plugin>
 
+
+			<!-- Maven Compiler Plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.16.0</version>
+
 				<configuration>
 					<release>21</release>
 
@@ -157,6 +257,7 @@
 							<version>1.18.48</version>
 						</path>
 					</annotationProcessorPaths>
+
 				</configuration>
 			</plugin>
 
