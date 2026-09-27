@@ -2,12 +2,14 @@ package com.Nikhil.DocReader_Backend.controller;
 
 
 import com.Nikhil.DocReader_Backend.dto.*;
+import com.Nikhil.DocReader_Backend.entity.User;
 import com.Nikhil.DocReader_Backend.service.RagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +19,7 @@ import reactor.core.publisher.Flux;
 import java.time.LocalDateTime;
 
 //http://localhost:8081/swagger-ui/index.html
+
 @RestController
 @RequestMapping("/api/v1/chat")
 @Tag(
@@ -33,10 +36,12 @@ public class ChatController {
     @PostMapping("/query")
     @Operation(summary = "Ask a question against all documents or a specific document with citations")
     public ResponseEntity<ApiResponse<ChatResponseDto>> askQuestion(
-            @Valid @RequestBody ChatRequestDto requestDto
+            @Valid @RequestBody ChatRequestDto requestDto,
+            Authentication authentication
     ) {
 
-        ChatResponseDto chatResponseDto = ragService.askQuestion(requestDto);
+        User user=(User)authentication.getPrincipal();
+        ChatResponseDto chatResponseDto = ragService.askQuestion(requestDto,user);
         return ResponseEntity.ok(
                 ApiResponse.
                         <ChatResponseDto>
@@ -53,16 +58,24 @@ public class ChatController {
     @PostMapping("/stream")
     @Operation(summary = "Stream real-time Q&A answer tokens via Server-Sent Events (SSE)")
     public Flux<String> streamQuestion(
-            @Valid @RequestBody ChatRequestDto requestDto
+            @Valid @RequestBody ChatRequestDto requestDto,
+            Authentication authentication
     ){
-        return ragService.streamQuestionAnswer(requestDto);
+        User user= (User) authentication.getPrincipal();
+        return ragService.streamQuestionAnswer(requestDto,user);
     }
 
 
     @PostMapping("/search/similarity")
     @Operation(summary = "Perform semantic similarity search on stored document vectors")
-    public ResponseEntity<ApiResponse<SearchResultDto>> searchSimilar(@Valid @RequestBody SearchRequestDto request) {
-        SearchResultDto results = ragService.searchSimilarChunks(request);
+    public ResponseEntity<ApiResponse<SearchResultDto>> searchSimilar(
+            @Valid @RequestBody SearchRequestDto request,
+            Authentication authentication
+
+    ) {
+
+        User user= (User) authentication.getPrincipal();
+        SearchResultDto results = ragService.searchSimilarChunks(request,user);
         return ResponseEntity.ok(
                 ApiResponse.
                         <SearchResultDto>

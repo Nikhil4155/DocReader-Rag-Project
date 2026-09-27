@@ -5,6 +5,7 @@ import com.Nikhil.DocReader_Backend.dto.DocumentMetadataDto;
 import com.Nikhil.DocReader_Backend.dto.DocumentResponseDto;
 import com.Nikhil.DocReader_Backend.entity.DocumentMetadata;
 import com.Nikhil.DocReader_Backend.entity.DocumentStatus;
+import com.Nikhil.DocReader_Backend.entity.User;
 import com.Nikhil.DocReader_Backend.exception.DocumentProcessingException;
 import com.Nikhil.DocReader_Backend.exception.ResourceNotFoundException;
 import com.Nikhil.DocReader_Backend.repository.DocumentMetadataRepo;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+
 @Service
 @RequiredArgsConstructor
 public class DocumentMetadataService {
@@ -39,12 +41,13 @@ public class DocumentMetadataService {
 
     //method to upload and parse document
     @Transactional
-    public DocumentResponseDto uploadAndProcess(MultipartFile file) {
+    public DocumentResponseDto uploadAndProcess(MultipartFile file, User user) {
 
         String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "document";
         String contentType = file.getContentType() != null ? file.getContentType() : "application/octat-stream";
 
         //document meta data create
+        //storing the user detail with document metadata
         DocumentMetadata documentMetadata = DocumentMetadata
                 .builder()
                 .filename(fileName)
@@ -52,6 +55,7 @@ public class DocumentMetadataService {
                 .status(DocumentStatus.UPLOADING)
                 .fileSize(file.getSize())
                 .createdAt(LocalDateTime.now())
+                .user(user)
                 .build();
 
 
@@ -65,7 +69,9 @@ public class DocumentMetadataService {
 
             //ingest service
             chunksCreated = ingestionService.ingest(documentMetadata, parsedDocs);
-        } catch (DocumentProcessingException e) {
+        } catch (
+                DocumentProcessingException e
+        ) {
             log.info("Document metadata deleting due to fail processing");
             documentMetadataRepo.delete(documentMetadata);
             throw e;
@@ -83,18 +89,19 @@ public class DocumentMetadataService {
                 .chunksCreated(chunksCreated)
                 .status(documentMetadata.getStatus())
                 .message("Document successfully processed and indexed.")
+                .userId(user.getId())
                 .build();
 
 
     }
 
-    public List<DocumentResponseDto> uploadMultipleDocuments(List<MultipartFile> files) {
+    public List<DocumentResponseDto> uploadMultipleDocuments(List<MultipartFile> files, User user) {
 
 
         List<DocumentResponseDto> responseDtos = new ArrayList<>();
 
         for (MultipartFile file : files) {
-            DocumentResponseDto result = this.uploadAndProcess(file);
+            DocumentResponseDto result = this.uploadAndProcess(file, user);
             responseDtos.add(result);
         }
 
@@ -103,6 +110,8 @@ public class DocumentMetadataService {
 
     }
 
+
+    //    to get all the documents: This method is useful for admin
     public List<DocumentMetadataDto> getAllDocuments() {
 
         List<DocumentMetadata> allDocuments = documentMetadataRepo.findAllByOrderByCreatedAtDesc();
@@ -112,6 +121,12 @@ public class DocumentMetadataService {
 
     }
 
+    public List<DocumentMetadataDto> getAllDocumentsByUser(User user) {
+        List<DocumentMetadata> documents = documentMetadataRepo.findByUserOrderByCreatedAtDesc(user);
+        return documents.stream()
+                .map(documentMetadata -> modelMapper.map(documentMetadata, DocumentMetadataDto.class))
+                .toList();
+    }
 
     public DocumentMetadataDto getDocumentById(UUID id) {
         DocumentMetadata documentMetadata = documentMetadataRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Document with given id not found !!"));

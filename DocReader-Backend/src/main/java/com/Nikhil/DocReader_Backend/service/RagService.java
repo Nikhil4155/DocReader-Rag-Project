@@ -2,6 +2,7 @@ package com.Nikhil.DocReader_Backend.service;
 
 import com.Nikhil.DocReader_Backend.config.AppProperties;
 import com.Nikhil.DocReader_Backend.dto.*;
+import com.Nikhil.DocReader_Backend.entity.User;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+
 @Service
 @RequiredArgsConstructor
 public class RagService {
@@ -31,12 +33,20 @@ public class RagService {
     private final ChatClient chatClient;
 
 
-    //to ask anything related to document
-    public ChatResponseDto askQuestion(ChatRequestDto request) {
+    //to ask any thing related to document
+    public ChatResponseDto askQuestion(ChatRequestDto request, User user) {
 
         long startTime = System.currentTimeMillis();
         log.info("Processing query: '{}', scoped documentId: {}", request.getQuestion(), request.getDocumentId());
-        List<Document> similarDocuments = this.retrieveRelevantDocuments(request.getQuestion(), request.getDocumentId(), request.getTopK(), request.getMinSimilarity());
+
+
+        List<Document> similarDocuments = this.retrieveRelevantDocuments(
+                request.getQuestion(),
+                request.getDocumentId(),
+                request.getTopK(),
+                request.getMinSimilarity(),
+                user
+        );
 
 
         List<CitationDto> citationDtos = similarDocuments.stream().map(this::mapToCitation).toList();
@@ -45,6 +55,9 @@ public class RagService {
 
         String prompt = buildPrompt(request.getQuestion(), contextText);
 
+        //you have to use conversationId to remember the conversation
+        //ChatMemory
+        //ChatMemoryRepository
         String answer = this.chatClient.prompt().user(prompt).call().content();
         long responseTime = System.currentTimeMillis() - startTime;
         log.info("Completed Q&A in {} ms with {} citations", responseTime, citationDtos.size());
@@ -53,14 +66,16 @@ public class RagService {
 
     }
 
+
     // this streams
-    public Flux<String> streamQuestionAnswer(ChatRequestDto requestDto) {
+    public Flux<String> streamQuestionAnswer(ChatRequestDto requestDto, User user) {
         log.info("Streaming query: '{}'", requestDto.getQuestion());
         List<Document> relevantDocuments = retrieveRelevantDocuments(
                 requestDto.getQuestion(),
                 requestDto.getDocumentId(),
                 requestDto.getTopK(),
-                requestDto.getMinSimilarity()
+                requestDto.getMinSimilarity(),
+                user
         );
         String contextText = buildContextString(relevantDocuments);
         String userPrompt = buildPrompt(requestDto.getQuestion(), contextText);
@@ -71,6 +86,7 @@ public class RagService {
 
 
     }
+
 
     private String buildPrompt(@NotBlank(message = "Question cannot be empty") String question, String contextText) {
 
@@ -113,16 +129,17 @@ public class RagService {
     }
 
 
-    public SearchResultDto searchSimilarChunks(SearchRequestDto request) {
+    public SearchResultDto searchSimilarChunks(SearchRequestDto request, User user) {
 
 
-        java.util.List<Document> matchedDocs = retrieveRelevantDocuments(request.getQuery(), request.getDocumentId(), request.getTopK(), request.getSimilaritySearch());
+        java.util.List<Document> matchedDocs = retrieveRelevantDocuments(request.getQuery(), request.getDocumentId(), request.getTopK(), request.getSimilaritySearch(), user);
 
         List<CitationDto> citations = matchedDocs.stream().map(this::mapToCitation).toList();
 
         return SearchResultDto.builder().query(request.getQuery()).totalMatches(citations.size()).matches(citations).build();
 
     }
+
 
     private CitationDto mapToCitation(Document document) {
 
@@ -154,23 +171,41 @@ public class RagService {
         return CitationDto.builder().documentId(docId).fileName((String) meta.getOrDefault("fileName", "Unknown")).chunkIndex(chunkIndex).pageNumber(pageNumber).snippet(document.getText()).similarityScore(score).metadata(meta).build();
     }
 
-    private List<Document> retrieveRelevantDocuments(@NotBlank(message = "Query cannot be empty") String query, UUID documentId, Integer topK, Double similaritySearch) {
+    //    this is very important document that fetches the similar result from vector db
+    private List<Document> retrieveRelevantDocuments(@NotBlank(message = "Query cannot be empty") String query, UUID documentId, Integer topK, Double similaritySearch, User user) {
 
         int effectiveTopK = (topK != null && topK > 0) ? topK : appProperties.getRag().getTopK();
+
         double effectiveSimilarity = (similaritySearch != null) ? similaritySearch : appProperties.getRag().getSimilarityThreshold();
 
-        SearchRequest.Builder searchRequestBuilder = SearchRequest.builder().query(query).topK(effectiveTopK);
+        SearchRequest.Builder searchRequestBuilder = SearchRequest.builder().
+                query(query).
+                topK(effectiveTopK);
 
         if (effectiveSimilarity > 0.0) {
             searchRequestBuilder.similarityThreshold(effectiveSimilarity);
         }
 
+        FilterExpressionBuilder b = new FilterExpressionBuilder();
+        Filter.Expression filterExpression;
         if (documentId != null) {
             log.info("Filtering from document :");
-            FilterExpressionBuilder b = new FilterExpressionBuilder();
-            Filter.Expression documentId1 = b.eq("documentId", documentId.toString()).build();
-            searchRequestBuilder.filterExpression(documentId1);
+
+            filterExpression =
+                    b.and(
+//                            introduced userId filter
+                            b.eq("userId", user.getId().toString()),
+                            b.eq("documentId", documentId.toString())
+
+                    ).build();
+
+        } else {
+            // introduced userId filter
+            filterExpression = b.eq("userId", user.getId().toString()).build();
+
         }
+        searchRequestBuilder.filterExpression(filterExpression);
+
 
         try {
             List<Document> documents = vectorStore.similaritySearch(searchRequestBuilder.build());

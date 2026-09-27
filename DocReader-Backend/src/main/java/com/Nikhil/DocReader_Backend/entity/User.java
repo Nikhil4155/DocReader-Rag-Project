@@ -4,6 +4,9 @@ package com.Nikhil.DocReader_Backend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -29,4 +32,9 @@ public class User {
 
     @Column(unique = true,nullable = false)
     private  String email;
+
+    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL,orphanRemoval = true)
+    private Set<DocumentMetadata> documentMetadataSet=new LinkedHashSet<>();
+
+
 }
