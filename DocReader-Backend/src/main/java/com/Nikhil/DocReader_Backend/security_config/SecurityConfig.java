@@ -32,12 +32,14 @@ public class SecurityConfig {
 
         //customization
 
-        httpSecurity.csrf(AbstractHttpConfigurer::disable)
+        httpSecurity.cors(org.springframework.security.config.Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         auth ->
                                 auth
+                                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ASYNC).permitAll()
                                         .requestMatchers("/api/v1/auth/**").permitAll()
                                         .requestMatchers("/api/v1/admin/**").hasRole(Role.ADMIN.toString())
                                         .requestMatchers("/api/v1/**").hasRole(Role.USER.toString())

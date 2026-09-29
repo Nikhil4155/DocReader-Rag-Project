@@ -82,7 +82,11 @@ public class RagService {
         return chatClient.prompt()
                 .user(userPrompt)
                 .stream()
-                .content();
+                .content()
+                .onErrorResume(e -> {
+                    log.error("Error during AI streaming: ", e);
+                    return Flux.just("\n\n**[Error: AI generation interrupted: " + e.getMessage() + "]**");
+                });
 
 
     }
