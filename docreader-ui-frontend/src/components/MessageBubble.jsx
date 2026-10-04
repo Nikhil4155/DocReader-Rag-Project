@@ -1,13 +1,78 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Bot, User, Copy, Check, Clock, BookOpen, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { CitationCard } from './CitationCard';
 import toast from 'react-hot-toast';
 
-export function MessageBubble({ message, onSelectDocument, isLast, isStreaming }) {
+const markdownComponents = {
+  p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+  h1: ({ children }) => <h1 className="text-lg font-bold mt-4 mb-2 text-slate-900 dark:text-white">{children}</h1>,
+  h2: ({ children }) => <h2 className="text-base font-bold mt-3 mb-2 text-slate-900 dark:text-white">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-sm font-bold mt-3 mb-1.5 text-slate-900 dark:text-white">{children}</h3>,
+  ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 my-2">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 my-2">{children}</ol>,
+  li: ({ children }) => <li className="my-0.5">{children}</li>,
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-4 border-indigo-500 pl-3 italic text-slate-600 dark:text-slate-400 my-2">
+      {children}
+    </blockquote>
+  ),
+  table: ({ children }) => (
+    <div className="overflow-x-auto my-3">
+      <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-xs">{children}</table>
+    </div>
+  ),
+  th: ({ children }) => (
+    <th className="px-3 py-2 bg-slate-100 dark:bg-slate-800 font-semibold text-left text-slate-700 dark:text-slate-300">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="px-3 py-2 border-t border-slate-100 dark:border-slate-800">{children}</td>
+  ),
+  code({ inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || '');
+    const codeString = String(children).replace(/\n$/, '');
+
+    if (!inline && match) {
+      return (
+        <div className="relative group/code my-3 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900 text-xs font-mono text-slate-400 border-b border-slate-800">
+            <span>{match[1]}</span>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(codeString);
+                toast.success('Code copied');
+              }}
+              className="hover:text-white flex items-center gap-1 text-[11px]"
+            >
+              <Copy className="w-3 h-3" />
+              <span>Copy</span>
+            </button>
+          </div>
+          <pre className="p-3 text-xs font-mono overflow-x-auto">
+            <code>{codeString}</code>
+          </pre>
+        </div>
+      );
+    }
+
+    return (
+      <code
+        className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-mono text-xs"
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
+};
+
+export const MessageBubble = memo(function MessageBubble({ message, onSelectDocument, isLast, isStreaming }) {
   const [copied, setCopied] = useState(false);
-  const [sourcesOpen, setSourcesOpen] = useState(true);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
 
   const isUser = message.role === 'user';
   const { content, citations, responseTimeMs, noMatchesFound } = message;
@@ -45,70 +110,7 @@ export function MessageBubble({ message, onSelectDocument, isLast, isStreaming }
           <div className="prose dark:prose-invert max-w-none text-sm leading-relaxed text-slate-800 dark:text-slate-200 space-y-3">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
-              components={{
-                p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
-                h1: ({ children }) => <h1 className="text-lg font-bold mt-4 mb-2 text-slate-900 dark:text-white">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-base font-bold mt-3 mb-2 text-slate-900 dark:text-white">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-sm font-bold mt-3 mb-1.5 text-slate-900 dark:text-white">{children}</h3>,
-                ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 my-2">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 my-2">{children}</ol>,
-                li: ({ children }) => <li className="my-0.5">{children}</li>,
-                blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-indigo-500 pl-3 italic text-slate-600 dark:text-slate-400 my-2">
-                    {children}
-                  </blockquote>
-                ),
-                table: ({ children }) => (
-                  <div className="overflow-x-auto my-3">
-                    <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-xs">{children}</table>
-                  </div>
-                ),
-                th: ({ children }) => (
-                  <th className="px-3 py-2 bg-slate-100 dark:bg-slate-800 font-semibold text-left text-slate-700 dark:text-slate-300">
-                    {children}
-                  </th>
-                ),
-                td: ({ children }) => (
-                  <td className="px-3 py-2 border-t border-slate-100 dark:border-slate-800">{children}</td>
-                ),
-                code({ inline, className, children, ...props }) {
-                  const match = /language-(\w+)/.exec(className || '');
-                  const codeString = String(children).replace(/\n$/, '');
-
-                  if (!inline && match) {
-                    return (
-                      <div className="relative group/code my-3 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100">
-                        <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900 text-xs font-mono text-slate-400 border-b border-slate-800">
-                          <span>{match[1]}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(codeString);
-                              toast.success('Code copied');
-                            }}
-                            className="hover:text-white flex items-center gap-1 text-[11px]"
-                          >
-                            <Copy className="w-3 h-3" />
-                            <span>Copy</span>
-                          </button>
-                        </div>
-                        <pre className="p-3 text-xs font-mono overflow-x-auto">
-                          <code>{codeString}</code>
-                        </pre>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <code
-                      className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-mono text-xs"
-                      {...props}
-                    >
-                      {children}
-                    </code>
-                  );
-                },
-              }}
+              components={markdownComponents}
             >
               {(content || '').replace(/<br\s*\/?>/gi, '\n')}
             </ReactMarkdown>
@@ -186,4 +188,4 @@ export function MessageBubble({ message, onSelectDocument, isLast, isStreaming }
       </div>
     </div>
   );
-}
+});

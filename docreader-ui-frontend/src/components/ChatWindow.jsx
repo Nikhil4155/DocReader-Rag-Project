@@ -48,7 +48,7 @@ export function ChatWindow({
       const isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 200;
 
       if (isScrolledToBottom || isStreaming) {
-        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        messagesEndRef.current.scrollIntoView({ behavior: isStreaming ? 'auto' : 'smooth' });
       }
     }
   }, [messages, isStreaming]);

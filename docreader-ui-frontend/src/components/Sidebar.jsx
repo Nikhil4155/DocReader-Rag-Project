@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import { DocumentList } from './DocumentList';
-import { FileText, Layers, LogOut, X, Shield, User, Search, MessageSquare, Settings, HardDrive } from 'lucide-react';
+import { UploadDropzone } from './UploadDropzone';
+import { ThemeToggle } from './ThemeToggle';
+import { FileText, Layers, LogOut, X, Shield, User, Search, PlusCircle, Settings, HardDrive } from 'lucide-react';
 
 export function Sidebar({
   documents,
@@ -16,6 +19,7 @@ export function Sidebar({
 }) {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-slate-900 text-slate-100 border-r border-slate-800">
@@ -33,15 +37,25 @@ export function Sidebar({
           </div>
         </div>
 
-        {mobileOpen && (
-          <button
-            type="button"
-            onClick={onCloseMobile}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 md:hidden"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
+          {mobileOpen && (
+            <>
+              <div className="md:hidden">
+                <ThemeToggle />
+              </div>
+              <button
+                type="button"
+                onClick={onCloseMobile}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 md:hidden"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Navigation Items */}
@@ -77,10 +91,11 @@ export function Sidebar({
         </Link>
 
         <button
+          onClick={() => setShowUploadModal(true)}
           className="w-full p-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all duration-150"
         >
-          <MessageSquare className="w-5 h-5 text-slate-400" />
-          <span>Chat with Documents</span>
+          <PlusCircle className="w-5 h-5 text-indigo-400" />
+          <span>Add Documents</span>
         </button>
 
         <button
@@ -183,6 +198,27 @@ export function Sidebar({
           />
           <div className="relative w-4/5 max-w-xs h-full z-10 shadow-2xl animate-in slide-in-from-left duration-200">
             {sidebarContent}
+          </div>
+        </div>
+      )}
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setShowUploadModal(false)} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-800">
+            <button 
+              onClick={() => setShowUploadModal(false)} 
+              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="pt-2">
+              <UploadDropzone onUploadSuccess={() => {
+                setShowUploadModal(false);
+                if (onUploadSuccess) onUploadSuccess();
+              }} />
+            </div>
           </div>
         </div>
       )}
